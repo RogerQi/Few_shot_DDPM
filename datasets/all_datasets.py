@@ -1,3 +1,4 @@
+import torch
 import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, Lambda
@@ -11,6 +12,27 @@ transform = Compose([
     Lambda(lambda x: (x - 0.5) * 2)]
 )
 
+# Dataset wrapper that filters classes and number of samples per class
+class FilteredDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, classes, samples_per_class):
+        self.dataset = dataset
+        self.classes = classes
+        self.samples_per_class = samples_per_class
+
+        self.indices = []
+        self.cls_cnt = {c: 0 for c in self.classes}
+        for i, (x, y) in enumerate(self.dataset):
+            if y in self.classes and self.cls_cnt[y] < self.samples_per_class:
+                self.indices.append(i)
+                self.cls_cnt[y] += 1
+        assert len(self.indices) <= self.samples_per_class * len(self.classes)
+
+    def __getitem__(self, index):
+        return self.dataset[self.indices[index]]
+
+    def __len__(self):
+        return len(self.indices)
+
 # For MNIST and FashionMNIST, the classifier is trained on the whole dataset
 
 def get_mnist_diffusion_train_set():
@@ -22,11 +44,11 @@ def get_mnist_classifier_train_set():
     return dataset
 
 def get_fashion_diffusion_train_set():
-    dataset = torchvision.datasets.MNIST("./datasets", download=True, train=True, transform=transform)
+    dataset = torchvision.datasets.FashionMNIST("./datasets", download=True, train=True, transform=transform)
     return dataset
 
 def get_fashion_classifier_train_set():
-    dataset = torchvision.datasets.MNIST("./datasets", download=True, train=True, transform=transform)
+    dataset = torchvision.datasets.FashionMNIST("./datasets", download=True, train=True, transform=transform)
     return dataset
 
 def get_omniglot_diffusion_train_set():
