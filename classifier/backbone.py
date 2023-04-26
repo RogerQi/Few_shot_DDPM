@@ -247,11 +247,12 @@ class BottleneckBlock(nn.Module):
         return out
 
 class ConvNet(nn.Module):
-    def __init__(self, depth, flatten = True):
+    def __init__(self, depth, input_dim, flatten = True):
+        # input_dim: sample channel (1 for black&white, 3 for RGB)
         super(ConvNet,self).__init__()
         trunk = []
         for i in range(depth):
-            indim = 3 if i == 0 else 64
+            indim = input_dim if i == 0 else 64
             outdim = 64
             B = ConvBlock(indim, outdim, pool = ( i <4 ) ) #only pooling for fist 4 layers
             trunk.append(B)
@@ -370,26 +371,26 @@ class ResNet(nn.Module):
         out = self.trunk(x)
         return out
 
-def Conv4():
-    return ConvNet(4)
+def Conv4(input_dim):
+    return ConvNet(4, input_dim)
 
-def Conv6():
-    return ConvNet(6)
+# def Conv6():
+#     return ConvNet(6)
 
-def Conv4NP():
-    return ConvNetNopool(4)
+# def Conv4NP():
+#     return ConvNetNopool(4)
 
-def Conv6NP():
-    return ConvNetNopool(6)
+# def Conv6NP():
+#     return ConvNetNopool(6)
 
-def Conv4S():
-    return ConvNetS(4)
+# def Conv4S():
+#     return ConvNetS(4)
 
-def Conv4SNP():
-    return ConvNetSNopool(4)
+# def Conv4SNP():
+#     return ConvNetSNopool(4)
 
-def ResNet10( flatten = True):
-    return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], flatten)
+# def ResNet10( flatten = True):
+#     return ResNet(SimpleBlock, [1,1,1,1],[64,128,256,512], flatten)
 
 def ResNet18( flatten = True):
     return ResNet(SimpleBlock, [2,2,2,2],[64,128,256,512], flatten)
