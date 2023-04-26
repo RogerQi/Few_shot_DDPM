@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
+from torch.optim import Adam
+
 from tqdm import tqdm
 
 import utils
@@ -16,35 +18,45 @@ from classifier.network import Conv4Cos
 
 from datasets.all_datasets import get_train_loader
 
-def training_loop(ddpm, loader, n_epochs, optim, device, store_path="ddpm_model.pt"):
-    mse = nn.MSELoss()
-    best_loss = float("inf")
+def training_loop(ddpm, classifier_model, loader, n_epochs, optim, device, store_path):
+    criterion = nn.CrossEntropyLoss()
     n_steps = ddpm.n_steps
 
+    total_train_iter_cnt = 0
+
     for epoch in tqdm(range(n_epochs), desc=f"Training progress", colour="#00ff00"):
-        epoch_loss = 0.0
-        for step, batch in enumerate(tqdm(loader, leave=False, desc=f"Epoch {epoch + 1}/{n_epochs}", colour="#005500")):
+        for _, batch in enumerate(loader):
             # Loading data
             x0 = batch[0].to(device)
+            y0 = batch[1].to(device)
+
             n = len(x0)
 
             # Picking some noise for each of the images in the batch, a timestep and the respective alpha_bars
             eta = torch.randn_like(x0).to(device)
-            t = torch.randint(0, n_steps, (n,)).to(device)
+            if False:
+                t = torch.randint(0, 1, (n,)).to(device)
+            else:
+                t = torch.randint(0, n_steps, (n,)).to(device)
 
             # Computing the noisy image based on x0 and the time-step (forward process)
             noisy_imgs = ddpm(x0, t, eta)
 
-            # Getting model estimation of noise based on the images and the time-step
-            eta_theta = ddpm.backward(noisy_imgs, t.reshape(n, -1))
+            output = classifier_model(noisy_imgs)
 
             # Optimizing the MSE between the noise plugged and the predicted noise
-            loss = mse(eta_theta, eta)
+            loss = criterion(output, y0)
             optim.zero_grad()
             loss.backward()
             optim.step()
 
-            epoch_loss += loss.item() * len(x0) / len(loader.dataset)
+            total_train_iter_cnt += 1
+
+            if total_train_iter_cnt % 100 == 0:
+                _, predicted = torch.max(output, 1)
+                acc = (predicted == y0).sum().item()
+                print(f"Training accuracy at Epoch {epoch} iteration {total_train_iter_cnt}: {acc / n:.3f}")
+                print(f"Training loss at iteration {total_train_iter_cnt}: {loss.item():.3f}")
 
 def main():
     # Loading the trained model
@@ -62,10 +74,8 @@ def main():
 
     classifier_model = Conv4Cos((C, H, W), n_classes=10).to(device)
 
-    print(classifier_model(batch[0]).shape)
-
     # First train the classifier end-to-end on the diffusion loader
-
+    training_loop(ddpm_model, classifier_model, diffusion_loader, n_epochs, Adam(classifier_model.parameters(), lr=1e-3), device, "classifier_model.pt")
 
     # Then, fine-tune the linear layer on the classifier loader
 
