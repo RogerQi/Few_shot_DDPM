@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.optim import Adam
 
 import utils
-from datasets.all_datasets import get_loader
+from datasets.all_datasets import get_train_loader
 from diffusion.network import MyUNet
 from diffusion.DDPM import MyDDPM, generate_new_images
 
@@ -71,7 +71,7 @@ def main():
     np.random.seed(SEED)
     torch.manual_seed(SEED)
 
-    diffusion_loader, _ = get_loader()
+    diffusion_loader, _ = get_train_loader()
 
     # Show a batch of regular images
     if train_viz_flag:

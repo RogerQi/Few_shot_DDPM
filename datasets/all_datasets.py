@@ -65,7 +65,7 @@ def get_cifar10_diffusion_train_set():
 def get_cifar10_classifier_train_set():
     raise NotImplementedError
 
-def get_loader():
+def get_train_loader():
     if dataset_name == "mnist":
         diffusion_set = get_mnist_diffusion_train_set()
         classifier_set = get_mnist_classifier_train_set()
@@ -83,3 +83,6 @@ def get_loader():
     diffusion_loader = DataLoader(diffusion_set, batch_size, shuffle=True)
     classifier_loader = DataLoader(classifier_set, batch_size, shuffle=True)
     return diffusion_loader, classifier_loader
+
+def get_val_loader():
+    raise NotImplementedError
