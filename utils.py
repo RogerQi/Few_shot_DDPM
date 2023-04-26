@@ -11,7 +11,7 @@ def show_images(images, title=""):
     # Defining number of rows and columns
     fig = plt.figure(figsize=(8, 8))
     rows = int(len(images) ** (1 / 2))
-    cols = round(len(images) / rows)
+    cols = round(len(images) / rows) + 1
 
     # Populating figure with sub-plots
     idx = 0
