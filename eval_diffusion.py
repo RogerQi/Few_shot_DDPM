@@ -21,7 +21,7 @@ def main():
             best_model,
             n_samples=100,
             device=device,
-            gif_name="fashion.gif" if fashion else "mnist.gif"
+            gif_name="generation_progress_viz.gif"
         )
     utils.show_images(generated, "Final result")
 

@@ -9,19 +9,18 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.utils.data import DataLoader
-
-from torchvision.transforms import Compose, ToTensor, Lambda
-from torchvision.datasets.mnist import MNIST, FashionMNIST
 
 import utils
+from datasets.all_datasets import get_loader
 from diffusion.network import MyUNet
 from diffusion.DDPM import MyDDPM, generate_new_images
 
 # This is bad! Last-minute implementation now
 from params import *
 
-def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_path="ddpm_model.pt"):
+train_viz_flag = False
+
+def training_loop(ddpm, loader, n_epochs, optim, device, store_path="ddpm_model.pt"):
     mse = nn.MSELoss()
     best_loss = float("inf")
     n_steps = ddpm.n_steps
@@ -52,7 +51,7 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
             epoch_loss += loss.item() * len(x0) / len(loader.dataset)
 
         # Display images generated at this epoch
-        if display:
+        if train_viz_flag:
             utils.show_images(generate_new_images(ddpm, device=device), f"Images generated at epoch {epoch + 1}")
 
         log_string = f"Loss at epoch {epoch + 1}: {epoch_loss:.3f}"
@@ -72,18 +71,11 @@ def main():
     np.random.seed(SEED)
     torch.manual_seed(SEED)
 
-    # Loading the data (converting each image into a tensor and normalizing between [-1, 1])
-    transform = Compose([
-        ToTensor(),
-        Lambda(lambda x: (x - 0.5) * 2)]
-    )
+    diffusion_loader, _ = get_loader()
 
-    ds_fn = FashionMNIST if fashion else MNIST
-    dataset = ds_fn("./datasets", download=True, train=True, transform=transform)
-    loader = DataLoader(dataset, batch_size, shuffle=True)
-
-    # Optionally, show a batch of regular images
-    utils.show_first_batch(loader)
+    # Show a batch of regular images
+    if train_viz_flag:
+        utils.show_first_batch(diffusion_loader)
 
     # Defining model
     ddpm = MyDDPM(MyUNet(n_steps), n_steps=n_steps, min_beta=min_beta, max_beta=max_beta, device=device)
@@ -91,11 +83,8 @@ def main():
     print("Total number of parameters:")
     print(sum([p.numel() for p in ddpm.parameters()]))
 
-    # Optionally, show the diffusion (forward) process
-    utils.show_forward(ddpm, loader, device)
-
     # Training
-    training_loop(ddpm, loader, n_epochs, optim=Adam(ddpm.parameters(), lr), device=device, store_path=store_path)
+    training_loop(ddpm, diffusion_loader, n_epochs, optim=Adam(ddpm.parameters(), lr), device=device, store_path=store_path)
 
 if __name__ == "__main__":
     main()

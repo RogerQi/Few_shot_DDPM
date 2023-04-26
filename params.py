@@ -1,12 +1,14 @@
 import torch
 
-fashion = True
 batch_size = 128
 n_epochs = 20
 lr = 0.001
 n_steps, min_beta, max_beta = 1000, 10 ** -4, 0.02  # Originally used by the authors
 
-store_path = "ddpm_fashion.pt" if fashion else "ddpm_mnist.pt"
+dataset_name = 'fashion'
+assert dataset_name in ['mnist', 'fashion', 'omniglot', 'cifar10']
+
+store_path = f"ddpm_{dataset_name}.pt"
 
 # Getting device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
