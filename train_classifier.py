@@ -65,6 +65,8 @@ def main():
     ddpm_model = MyDDPM(MyUNet(), n_steps=n_steps, device=device)
     ddpm_model.eval()
 
+    classifier_train_epoch = 50
+
     diffusion_loader, classifier_loader = get_train_loader()
 
     # Probe data shape
@@ -75,7 +77,9 @@ def main():
     classifier_model = Conv4Cos((C, H, W), n_classes=10).to(device)
 
     # First train the classifier end-to-end on the diffusion loader
-    training_loop(ddpm_model, classifier_model, diffusion_loader, n_epochs, Adam(classifier_model.parameters(), lr=1e-3), device, "classifier_model.pt")
+    training_loop(ddpm_model, classifier_model, diffusion_loader, classifier_train_epoch, Adam(classifier_model.parameters(), lr=1e-3), device, "classifier_model.pt")
+
+    torch.save(classifier_model.state_dict(), store_path.replace(".pt", "_classifier.pt"))
 
     # Then, fine-tune the linear layer on the classifier loader
 
