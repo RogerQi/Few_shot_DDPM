@@ -2,7 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import imageio
+from tqdm import tqdm, trange
 from einops import rearrange
+
+from IPython import embed
 
 # DDPM class
 class MyDDPM(nn.Module):
@@ -33,7 +36,9 @@ class MyDDPM(nn.Module):
         # The network returns its estimation of the noise that was added.
         return self.network(x, t)
 
-def generate_new_images(ddpm, n_samples=16, device=None, frames_per_gif=100, gif_name="sampling.gif", c=1, h=28, w=28):
+def generate_new_images(ddpm, n_samples=16, device=None, frames_per_gif=100,
+                            gif_name="sampling.gif", c=1, h=28, w=28,
+                            cond_fn=None):
     """Given a DDPM model, a number of samples to be generated and a device, returns some newly generated samples"""
     frame_idxs = np.linspace(0, ddpm.n_steps, frames_per_gif).astype(np.uint)
     frames = []
@@ -44,7 +49,7 @@ def generate_new_images(ddpm, n_samples=16, device=None, frames_per_gif=100, gif
 
         # Starting from random noise
         x = torch.randn(n_samples, c, h, w).to(device)
-
+        print("Sampling...")
         for idx, t in enumerate(list(range(ddpm.n_steps))[::-1]):
             # Estimating noise to be removed
             time_tensor = (torch.ones(n_samples, 1) * t).to(device).long()
@@ -57,6 +62,10 @@ def generate_new_images(ddpm, n_samples=16, device=None, frames_per_gif=100, gif
             x = (1 / alpha_t.sqrt()) * (x - (1 - alpha_t) / (1 - alpha_t_bar).sqrt() * eta_theta)
 
             if t > 0:
+                # Bias noise with conditional function
+                if cond_fn is not None:
+                    gradient = cond_fn(x, time_tensor, torch.zeros((n_samples,)).long().to(device))
+                    x = x + gradient
                 z = torch.randn(n_samples, c, h, w).to(device)
 
                 # Option 1: sigma_t squared = beta_t
