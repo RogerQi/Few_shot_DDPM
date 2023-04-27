@@ -38,7 +38,7 @@ def main():
     classifier_model.eval()
     print("Classifier loaded")
 
-    def cond_fn(x, t, y, classifier_scale=1.0):
+    def cond_fn(x, t, y, classifier_scale=0.5):
         with torch.enable_grad():
             x_in = x.detach().requires_grad_(True)
             logits = classifier_model(x_in)

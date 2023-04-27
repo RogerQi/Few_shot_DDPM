@@ -58,14 +58,20 @@ def generate_new_images(ddpm, n_samples=16, device=None, frames_per_gif=100,
             alpha_t = ddpm.alphas[t]
             alpha_t_bar = ddpm.alpha_bars[t]
 
+            if t > 0:
+                # Bias noise with conditional function
+                if cond_fn is not None:
+                    # TODO: make this a parameter for the function
+                    class_label_vec = torch.zeros((n_samples,)).long().to(device)
+                    gradient = cond_fn(x, time_tensor, class_label_vec)
+                    # Equation from Algorithm 2 from https://arxiv.org/pdf/2105.05233.pdf
+                    x = x + (1 - alpha_t_bar).sqrt() * gradient
+
             # Partially denoising the image
             x = (1 / alpha_t.sqrt()) * (x - (1 - alpha_t) / (1 - alpha_t_bar).sqrt() * eta_theta)
 
             if t > 0:
-                # Bias noise with conditional function
-                if cond_fn is not None:
-                    gradient = cond_fn(x, time_tensor, torch.zeros((n_samples,)).long().to(device))
-                    x = x + gradient
+                # Langevin sampling with added noises
                 z = torch.randn(n_samples, c, h, w).to(device)
 
                 # Option 1: sigma_t squared = beta_t
