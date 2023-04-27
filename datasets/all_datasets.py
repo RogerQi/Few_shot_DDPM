@@ -85,4 +85,15 @@ def get_train_loader():
     return diffusion_loader, classifier_loader
 
 def get_val_loader():
-    raise NotImplementedError
+    if dataset_name == "mnist":
+        dataset = torchvision.datasets.MNIST("./datasets", download=True, train=False, transform=transform)
+    elif dataset_name == "fashion":
+        dataset = torchvision.datasets.FashionMNIST("./datasets", download=True, train=False, transform=transform)
+    elif dataset_name == "omniglot":
+        dataset = torchvision.datasets.Omniglot("./datasets", download=True, background=True, transform=transform)
+    elif dataset_name == "cifar10":
+        dataset = torchvision.datasets.CIFAR10("./datasets", download=True, train=False, transform=transform)
+    else:
+        raise ValueError(f"Dataset {dataset_name} not implemented")
+    val_loader = DataLoader(dataset, batch_size, shuffle=False)
+    return val_loader
